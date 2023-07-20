@@ -37,3 +37,6 @@ result = model.solve(pl.GUOROBI()))
 ```
 
 **Ha kategóriát is megadsz,** akkor előfeltétel, hogy ugyanannyi külöböző kategória legyen a megadott csapatok között, mint amennyi különböző nem 0 jelölő van a room.txt fileban. Ez esetben kapsz egy kérdést a programtól, hogy ezen adatok fel legyenek-e használva.
+
+## Példa
+Az itt feltöltött példa input fileokkal lehet tesztelni a program futását, illetve azokat lehet alapul venni, ha új input fileokat szeretnél készíteni.
