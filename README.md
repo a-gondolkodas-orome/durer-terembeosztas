@@ -17,7 +17,7 @@ python script based on IP model that scheduls a room for a competition day based
 
 - **terem: Egy *room.txt nevű* file amiben egy n*k-s téglalapba írt értékek vannak elkódolva space és újsor elválasztásokkal. Ajánlott számokkal kitölteni. Speciálisan a 0 jelent olyan helyet, ahova nem ülhet csapat.**
 - **Adatok: Egy *setup.json* nevű file, amiben szerepelnek a súlyok, és egy max futás idő. Plust az extra funkció használatához egy leképezés, hogy melyik szám, melyik katóriát jelöli a megadott room.txt fileban is van generálva, ami egy elterjett mpi modellforma.**
-- **A használandó kulcsokhoz itt a példa: *"same_cat_row": 20,"same_cat_col": 15,"same_sch_row": 2,"same_sch_col": 2,"same_sch_diag": 1,"A kategória": 2,"B kategória": 1,"C kategória": 3,"max_run_time": 5***
+**A használandó kulcsokhoz itt a példa: *"same_cat_row": 20,"same_cat_col": 15,"same_sch_row": 2,"same_sch_col": 2,"same_sch_diag": 1,"A kategória": 2,"B kategória": 1,"C kategória": 3,"max_run_time": 5***
 - **csapatadatok: Egy *csapatok.xlsx* nevű file, amiben szerepelnek a következő oszlopok pont ezen fejlecekkel: 'ID', 'Csapatnév', 'Kategória', '1. tag iskolája', '2. tag iskolája', '3. tag iskolája', 'Beosztani'
   Itt a 'Beosztani' oszlop egy indikátor oszlop, ahol 1 jelöli, hoyg mely csapatokat akarjuk az adott terembe beosztani. A többi oszlop értelemszerű adat a csapat adatbázisokból**
 
