@@ -4,10 +4,22 @@ import json
 import os
 from time import time
 
+# Import setups
+file_name = "setup.json"
+with open(file_name, encoding="utf-8") as import_file:
+    setup = json.load(import_file)
+
+cost_cat_row = setup["penalty_weights"]["same_category_row"]
+cost_cat_col = setup["penalty_weights"]["same_category_col"]
+cost_sch_row = setup["penalty_weights"]["same_school_row"]
+cost_sch_col = setup["penalty_weights"]["same_school_col"]
+cost_sch_diag = setup["penalty_weights"]["same_school_diag"]
+max_run_time = setup["max_run_time"]
+
 # Set up room
 file_name = "room.txt"
 with open(file_name) as roomFile:
-    room = [[char for char in line.strip()] for line in roomFile]
+    room = [line.split() for line in roomFile]
 places = []
 len_x = len(room)
 len_y = len(room[0])
@@ -15,24 +27,12 @@ for x in range(len_x):
     if len(room[x]) != len_y:
         raise ValueError(f"Invalid room setup: {room[x]}, expected length: {len_y}")
     for y in range(len_y):
-        if room[x][y] in [str(i) for i in range(10)]:
-            places.append((x, y))
-        elif room[x][y] == "-":
+        if room[x][y] == "-":
             pass
+        elif room[x][y] in setup["category_notation"].values():
+            places.append((x, y))
         else:
-            raise ValueError(f"Invalid room setup: {room[x][y]}")        
-
-# Import setups
-file_name = os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup.json")
-with open(file_name, encoding="utf-8") as import_file:
-    setup = json.load(import_file)
-
-cost_cat_row = setup["same_cat_row"]
-cost_cat_col = setup["same_cat_col"]
-cost_sch_row = setup["same_sch_row"]
-cost_sch_col = setup["same_sch_col"]
-cost_sch_diag = setup["same_sch_diag"]
-max_run_time = setup["max_run_time"]
+            raise ValueError(f"Invalid room setup: {room[x][y]}. It should be '-' or a category notation.")
 
 # Import teams
 file_name = "csapatok.tsv"
@@ -65,23 +65,24 @@ for x, y in places:
 
 
 # Decide modell type: IS CATEGORY PLACES GIVEN
-cat_place_given = False
+cat_place_given = setup["is_category_preset"]
 
-room_set = set()
-for e1 in room:
-    for e2 in e1:
-        room_set.add(e2)
-if len(room_set) - 1 == len(csapatok["Kategória"].unique()):
-    var = input(
-        "Choose option: Is the category place pre selected and translation is given in setup.json? (y/n):"
-    )
-if (
-    var.strip() == "y"
-    or var.strip() == "Y"
-    or var.strip() == "yes"
-    or var.strip() == "Yes"
-):
-    cat_place_given = True
+# room_set = set()
+# for e1 in room:
+#     for e2 in e1:
+#         room_set.add(e2)
+# if len(room_set) - 1 == len(csapatok["Kategória"].unique()):
+#     cat_place_given
+#     var = input(
+#         "Choose option: Is the category place pre selected and translation is given in setup.json? (y/n):"
+#     )
+# if (
+#     var.strip() == "y"
+#     or var.strip() == "Y"
+#     or var.strip() == "yes"
+#     or var.strip() == "Yes"
+# )::
+# cat_place_given = True
 
 
 # Model
@@ -92,9 +93,8 @@ var_name_hely_indicator = []
 if cat_place_given == True:
     for id in csapatok["ID"]:
         for x, y in places:
-            if setup[str(csapatok[csapatok["ID"] == id]["Kategória"].values[0])] == int(
-                room[x][y]
-            ):
+            current_notation = setup["category_notation"][str(csapatok[csapatok["ID"] == id]["Kategória"].values[0])]
+            if current_notation == room[x][y]:
                 var_name_hely_indicator.append((x, y, id))
 else:
     for id in csapatok["ID"]:
