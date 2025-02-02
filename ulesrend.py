@@ -1,16 +1,10 @@
-try:
-    from pulp import *
-    import pandas as pd
-    import json
-except ImportError as e:
-    print("Error -> ", e)
-    print("One of the packages or neccesery subpackages not installed: pulp, pandas, json")
-
-
-
+from pulp import LpProblem, LpVariable, lpSum, LpMinimize, PULP_CBC_CMD
+import pandas as pd
+import json
+import os
 
 #Set up room
-file_name= os.path.join(os.path.dirname(os.path.abspath(__file__)), "room.txt")
+file_name = "room.txt"
 with open(file_name) as roomFile:
     room = [line.split() for line in roomFile]
 len_x=len(room)
@@ -22,7 +16,7 @@ for x in range(len_x):
             places.append((x,y))
 
 # Import setups
-file_name= os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup.json")
+file_name = os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup.json")
 with open(file_name, encoding='utf-8') as import_file:
   setup = json.load(import_file)
 
@@ -34,12 +28,13 @@ cost_sch_diag = setup["same_sch_diag"]
 max_run_time = setup["max_run_time"]
 
 # Import teams
-file_name= os.path.join(os.path.dirname(os.path.abspath(__file__)), "csapatok.xlsx")
-excel_data = pd.read_excel(file_name)
-data = pd.DataFrame(excel_data, columns=['ID', 'Csapatnév', 'Kategória', '1. tag iskolája', '2. tag iskolája', '3. tag iskolája', 'Beosztani']) 
-csapatok = data[data['Beosztani'] == 1]
-
-
+file_name = "csapatok.tsv"
+csapatok = pd.read_csv(file_name, delimiter='\t')
+csapatok = csapatok[csapatok['Beosztani'] == 1]
+expected_columns = {'ID', 'Csapatnév', 'Kategória', 'Beosztani',
+                   '1. tag iskolája', '2. tag iskolája', '3. tag iskolája'}
+if set(csapatok.columns) != expected_columns:
+    raise ValueError(f"Wrong columns. Expected: {expected_columns}, got: {set(csapatok.columns)}")
 
 # school dic
 sch_dic={}
