@@ -2,18 +2,25 @@ from pulp import LpProblem, LpVariable, lpSum, LpMinimize, PULP_CBC_CMD
 import pandas as pd
 import json
 import os
+from time import time
 
 # Set up room
 file_name = "room.txt"
 with open(file_name) as roomFile:
-    room = [line.split() for line in roomFile]
+    room = [[char for char in line.strip()] for line in roomFile]
+places = []
 len_x = len(room)
 len_y = len(room[0])
-places = []
 for x in range(len_x):
+    if len(room[x]) != len_y:
+        raise ValueError(f"Invalid room setup: {room[x]}, expected length: {len_y}")
     for y in range(len_y):
-        if room[x][y] != "0" and room[x][y] != 0:
+        if room[x][y] in [str(i) for i in range(10)]:
             places.append((x, y))
+        elif room[x][y] == "-":
+            pass
+        else:
+            raise ValueError(f"Invalid room setup: {room[x][y]}")        
 
 # Import setups
 file_name = os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup.json")
@@ -344,7 +351,7 @@ print(time() - s)
 model.writeMPS(os.path.join(os.path.dirname(os.path.abspath(__file__)), "test.mps"))
 
 time_limit_in_seconds = 60 * max_run_time
-model.solve(PULP_CBC_CMD(msg=1, maxSeconds=time_limit_in_seconds))
+model.solve(PULP_CBC_CMD(msg=1, timeLimit=time_limit_in_seconds))
 
 
 res_cat = [[""] * len_y for _ in range(len_x)]
