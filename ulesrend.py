@@ -3,6 +3,7 @@ import pandas as pd
 import json
 import os
 from time import time
+from itertools import permutations
 
 # Import setups
 file_name = "setup.json"
@@ -19,7 +20,7 @@ max_run_time = setup["max_run_time"]
 # Set up room
 file_name = "room.txt"
 with open(file_name) as roomFile:
-    room = [line.split() for line in roomFile]
+    room = [line.strip().split(setup["splitting_char"]) for line in roomFile]
 places = []
 len_x = len(room)
 len_y = len(room[0])
@@ -90,22 +91,17 @@ model = LpProblem("Ülésrend", LpMinimize)
 
 
 var_name_hely_indicator = []
-if cat_place_given == True:
-    for id in csapatok["ID"]:
-        for x, y in places:
-            current_notation = setup["category_notation"][str(csapatok[csapatok["ID"] == id]["Kategória"].values[0])]
-            if current_notation == room[x][y]:
-                var_name_hely_indicator.append((x, y, id))
-else:
-    for id in csapatok["ID"]:
-        for x, y in places:
+for id in csapatok["ID"]:
+    category = csapatok[csapatok["ID"] == id]["Kategória"].values[0]
+    category_short = setup["category_notation"][category]
+    for x, y in places:
+        if not cat_place_given or category_short == room[x][y]:
             var_name_hely_indicator.append((x, y, id))
 var_hely_indicator = LpVariable.dicts(
     "hely", var_name_hely_indicator, cat="Binary", lowBound=0, upBound=1
 )
 
-
-if cat_place_given == False:
+if not cat_place_given:
     var_name_penalty_cat_row = [
         (x, y, id1, x - 1, y, id2)
         for (x, y) in places
@@ -243,85 +239,81 @@ else:
 # Conditions
 for x, y in places:
     # row / x
-    if x - 1 > 0:
-        for id1 in csapatok["ID"]:
-            for id2 in csapatok["ID"]:
-                # cost of school per row
-                if (
-                    (x, y, id1) in var_name_hely_indicator
-                    and (x - 1, y, id2) in var_name_hely_indicator
-                    and sch_dic[id1] & sch_dic[id2]
-                ):
+    for id1, id2 in permutations(csapatok["ID"], 2):
+        if x > 0:
+            # cost of school per row
+            if (
+                (x, y, id1) in var_name_hely_indicator
+                and (x - 1, y, id2) in var_name_hely_indicator
+                and len(sch_dic[id1] & sch_dic[id2]) > 0
+            ):
+                model += (
+                    var_penalty_sch_row[(x, y, id1, x - 1, y, id2)] + 1
+                    >= var_hely_indicator[(x, y, id1)]
+                    + var_hely_indicator[(x - 1, y, id2)]
+                )
+
+            if cat_place_given == False:
+                # cost of category per row
+                cat1 = csapatok[csapatok["ID"] == id1]["Kategória"].values[0]
+                cat2 = csapatok[csapatok["ID"] == id2]["Kategória"].values[0]
+                if cat1 == cat2:
                     model += (
-                        var_penalty_sch_row[(x, y, id1, x - 1, y, id2)] + 1
+                        var_penalty_cat_row[(x, y, id1, x - 1, y, id2)] + 1
                         >= var_hely_indicator[(x, y, id1)]
                         + var_hely_indicator[(x - 1, y, id2)]
                     )
 
-                if cat_place_given == False:
-                    # cost of category per row
-                    cat1 = csapatok[csapatok["ID"] == id1]["Kategória"].values[0]
-                    cat2 = csapatok[csapatok["ID"] == id2]["Kategória"].values[0]
-                    if cat1 == cat2:
-                        model += (
-                            var_penalty_cat_row[(x, y, id1, x - 1, y, id2)] + 1
-                            >= var_hely_indicator[(x, y, id1)]
-                            + var_hely_indicator[(x - 1, y, id2)]
-                        )
+        if y > 0:
+            # cost of school per col
+            if (
+                (x, y, id1) in var_name_hely_indicator
+                and (x, y - 1, id2) in var_name_hely_indicator
+                and len(sch_dic[id1] & sch_dic[id2]) > 0
+            ):
+                if id1==705 and id2==734:
+                    print(x,y, id1, id2)
+                model += (
+                    var_penalty_sch_col[(x, y, id1, x, y - 1, id2)] + 1
+                    >= var_hely_indicator[(x, y, id1)]
+                    + var_hely_indicator[(x, y - 1, id2)]
+                )
 
-    # col / x
-    if y - 1 > 0:
-        for id1 in csapatok["ID"]:
-            for id2 in csapatok["ID"]:
-                # cost of school per col
+            if cat_place_given == False:
+                # cost of category per col
                 if (
-                    (x, y, id1) in var_name_hely_indicator
-                    and (x, y - 1, id2) in var_name_hely_indicator
-                    and sch_dic[id1] & sch_dic[id2]
+                    csapatok[csapatok["ID"] == id1]["Kategória"].values[0]
+                    == csapatok[csapatok["ID"] == id2]["Kategória"].values[0]
                 ):
                     model += (
-                        var_penalty_sch_col[(x, y, id1, x, y - 1, id2)] + 1
+                        var_penalty_cat_col[(x, y, id1, x, y - 1, id2)] + 1
                         >= var_hely_indicator[(x, y, id1)]
                         + var_hely_indicator[(x, y - 1, id2)]
                     )
-
-                if cat_place_given == False:
-                    # cost of category per col
-                    if (
-                        csapatok[csapatok["ID"] == id1]["Kategória"].values[0]
-                        == csapatok[csapatok["ID"] == id2]["Kategória"].values[0]
-                    ):
-                        model += (
-                            var_penalty_cat_col[(x, y, id1, x, y - 1, id2)] + 1
-                            >= var_hely_indicator[(x, y, id1)]
-                            + var_hely_indicator[(x, y - 1, id2)]
-                        )
-
-    # cost of school per diag 1
-    if x - 1 > 0 and y - 1 > 0:
-        if (
-            (x, y, id1) in var_name_hely_indicator
-            and (x - 1, y - 1, id2) in var_name_hely_indicator
-            and sch_dic[id1] & sch_dic[id2]
-        ):
-            model += (
-                var_penalty_sch_diag[(x, y, id1, x - 1, y - 1, id2)] + 1
-                >= var_hely_indicator[(x, y, id1)]
-                + var_hely_indicator[(x - 1, y - 1, id2)]
-            )
-
-    # cost of school per diag 2
-    if x - 1 > 0 and y + 1 < len_y:
-        if (
-            (x, y, id1) in var_name_hely_indicator
-            and (x - 1, y + 1, id2) in var_name_hely_indicator
-            and sch_dic[id1] & sch_dic[id2]
-        ):
-            model += (
-                var_penalty_sch_diag[(x, y, id1, x - 1, y + 1, id2)] + 1
-                >= var_hely_indicator[(x, y, id1)]
-                + var_hely_indicator[(x - 1, y + 1, id2)]
-            )
+        if x > 0 and y > 0:
+            # cost of school per diag 1
+            if (
+                (x, y, id1) in var_name_hely_indicator
+                and (x - 1, y - 1, id2) in var_name_hely_indicator
+                and len(sch_dic[id1] & sch_dic[id2]) > 0
+            ):
+                model += (
+                    var_penalty_sch_diag[(x, y, id1, x - 1, y - 1, id2)] + 1
+                    >= var_hely_indicator[(x, y, id1)]
+                    + var_hely_indicator[(x - 1, y - 1, id2)]
+                )
+        if x > 0 and y + 1 < len_y:
+            # cost of school per diag 2
+            if (
+                (x, y, id1) in var_name_hely_indicator
+                and (x - 1, y + 1, id2) in var_name_hely_indicator
+                and len(sch_dic[id1] & sch_dic[id2]) > 0
+            ):
+                model += (
+                    var_penalty_sch_diag[(x, y, id1, x - 1, y + 1, id2)] + 1
+                    >= var_hely_indicator[(x, y, id1)]
+                    + var_hely_indicator[(x - 1, y + 1, id2)]
+                )
 
 
 # Exactly at one place
@@ -356,12 +348,14 @@ model.solve(PULP_CBC_CMD(msg=1, timeLimit=time_limit_in_seconds))
 
 res_cat = [[""] * len_y for _ in range(len_x)]
 res_name = [[""] * len_y for _ in range(len_x)]
+res_school1 = [[""] * len_y for _ in range(len_x)]
 print(f"csapat id: x,y")
 for x, y, id in var_name_hely_indicator:
     if var_hely_indicator[(x, y, id)].value() == 1:
         print(f"{id}: {x,y}")
         res_cat[x][y] = csapatok[csapatok["ID"] == id]["Kategória"].values[0]
         res_name[x][y] = csapatok[csapatok["ID"] == id]["Csapatnév"].values[0]
+        res_school1[x][y] = csapatok[csapatok["ID"] == id]["1. tag iskolája"].values[0]
 
 
 with open(
@@ -382,4 +376,14 @@ with open(
     for y in range(len_y):
         for x in range(len_x):
             f.write(f"{res_name[x][y]} \t")
+        f.write("\n")
+
+with open(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "ulesrend_iskolak.txt"),
+    "w",
+    encoding="utf-8",
+) as f:
+    for y in range(len_y):
+        for x in range(len_x):
+            f.write(f"{res_school1[x][y]} \t")
         f.write("\n")
