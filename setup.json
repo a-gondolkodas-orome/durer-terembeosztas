@@ -2,6 +2,9 @@
     "is_category_preset": true,
     "max_run_time": 5,
     "splitting_char": "\t",
+    "teamdatas_file": "csapatok.tsv",
+    "room_file": "room.txt",
+    "output_dir": "output",
     "penalty_weights": {
         "same_category_row": 5,
         "same_category_col": 10,
