@@ -1,17 +1,14 @@
-# durer-terembeosztas
-python script based on IP model that scheduls a room for a competition day based on different parameters
+# durer-seating plan
 
-## Projekt célja
+Category and school based seating plan for Dürer competition with Integer Programming model.
 
-Ülésrend viszonylagosan gyors generálása a Dűrer versenyre egy IP modell segítségével.
+## Mathematical model
 
-## Matematikai modell elemei:
+- Penalty weights based on categories for horizontal and vertical neighbors.
+- Penalty weights if at least one school is the same for horizontal, vertical, and diagonal neighbors.
+- The result represents a seating arrangement - every seat has one team, and every team is seated somewhere.
 
-- büntető súlyok kategóriák alapján vízszintes és függőleges szomszédok számára.
-- büntető súlyok legalább egy közös iskola esetén vízszintes és függőleges és átlós szomszédok számára.
-- A kapott eredmény egy ültetést reprezentál - minden helyen may 1 csapat ül és minden csapat ül valahol
-
-***Extra funkció: Meg lehet adni a kategóriák elhelyezkedését a teremben.***
+***Extra feature: You can specify the location of categories in the room.***
 
 ## Input
 
